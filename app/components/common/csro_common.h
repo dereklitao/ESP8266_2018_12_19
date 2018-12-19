@@ -110,7 +110,7 @@ typedef struct
     bool            valid;
     uint8_t         weekday;
     uint16_t        minutes;
-    uint8_t         action;
+    uint16_t         action;
 } alarm_struct;
 
 
@@ -129,8 +129,8 @@ void csro_datetime_set(char *time_str);
 void csro_task_mqtt(void *pvParameters);
 void csro_task_smartconfig(void *pvParameters);
 
-void csro_alarm_add(uint8_t weekday, uint16_t minutes, uint8_t action);
-void csro_alarm_modify(uint8_t index, uint8_t weekday, uint16_t minutes, uint8_t action);
+void csro_alarm_add(uint8_t weekday, uint16_t minutes, uint16_t action);
+void csro_alarm_modify(uint8_t index, uint8_t weekday, uint16_t minutes, uint16_t action);
 void csro_alarm_delete(uint8_t index);
 void csro_alarm_clear(void);
 

@@ -107,6 +107,15 @@ static void udp_receive_task(void *pvParameters)
     vTaskDelete(NULL);
 }
 
+static void handle_self_message(MessageData* data)
+{
+    csro_device_handle_self_message(data);
+}
+
+static void handle_group_message(MessageData* data)
+{
+    csro_device_handle_group_message(data);
+}
 
 static bool broker_is_connected(void)
 {
@@ -124,17 +133,20 @@ static bool broker_is_connected(void)
     data.username.cstring = mqtt_info.name;
     data.password.cstring = mqtt_info.pass;
 
-    if (MQTTConnect(&mqtt_info.client, &data) != SUCCESS)                                                               { mqtt_info.client.isconnected = 0; return false; }
-    if (MQTTSubscribe(&mqtt_info.client, mqtt_info.sub_topic_self, QOS1, csro_device_handle_self_message) != SUCCESS)   { mqtt_info.client.isconnected = 0; return false; }
-    if (MQTTSubscribe(&mqtt_info.client, mqtt_info.sub_topic_group, QOS1, csro_device_handle_group_message) != SUCCESS) { mqtt_info.client.isconnected = 0; return false; }
+    sprintf(mqtt_info.sub_topic_self, "%s/%s/%s/command", mqtt_info.prefix, system_info.mac_str, system_info.dev_type);
+    sprintf(mqtt_info.sub_topic_group, "%s/group", mqtt_info.prefix);
 
+    if (MQTTConnect(&mqtt_info.client, &data) != SUCCESS)                                                   { mqtt_info.client.isconnected = 0; return false; }
+    if (MQTTSubscribe(&mqtt_info.client, mqtt_info.sub_topic_self, QOS1, csro_device_handle_self_message) != SUCCESS)   { mqtt_info.client.isconnected = 0; return false; }
+    debug("%s\n", mqtt_info.sub_topic_self);
+    if (MQTTSubscribe(&mqtt_info.client, mqtt_info.sub_topic_group, QOS1, csro_device_handle_group_message) != SUCCESS) { mqtt_info.client.isconnected = 0; return false; }
+    debug("%s\n", mqtt_info.sub_topic_group);
     return true;
 }
 
 static void basic_msg_timer_callback( TimerHandle_t xTimer )
 {
     xSemaphoreGive(basic_msg_semaphore);
-    debug("basic_msg_timer_callback\n");
 }
 
 
@@ -180,7 +192,7 @@ void csro_task_mqtt(void *pvParameters)
             //     if (xSemaphoreTake(basic_msg_semaphore, 0) == pdTRUE) {
             //        mqtt_pub_basic_message();
             //    }
-                 mqtt_pub_basic_message();
+                  mqtt_pub_basic_message();
                 if (xSemaphoreTake(system_msg_semaphore, 0) == pdTRUE) {
                    mqtt_pub_system_message();
                }

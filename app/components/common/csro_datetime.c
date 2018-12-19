@@ -19,9 +19,9 @@ static void load_alarm_from_nvs(void)
             sprintf(alarm_key, "alarm%d", i);
             nvs_get_u32(handle, alarm_key, &alarm_value);
             alarms[i].valid = true;
-            alarms[i].weekday = (uint8_t)((alarm_value & 0xFF000000) >> 24);
-            alarms[i].minutes = (uint16_t)((alarm_value & 0x00FFFF00) >> 8);
-            alarms[i].action = (uint8_t)(alarm_value & 0x000000FF);
+            alarms[i].weekday = (uint8_t)((alarm_value & 0xFE000000) >> 25);
+            alarms[i].minutes = (uint16_t)((alarm_value & 0x01FFC000) >> 14);
+            alarms[i].action = (uint16_t)(alarm_value & 0x00003FFF);
             debug("alarm %d: weekday = %d, minutes = %d, action = %d\r\n", i, alarms[i].weekday, alarms[i].minutes, alarms[i].action);
         }
         else {
@@ -46,7 +46,7 @@ static void save_alarm_to_nvs(void)
             char alarm_key[20];
             uint32_t alarm_value = 0;
             sprintf(alarm_key, "alarm%d", i);
-            alarm_value = (((uint32_t)alarms[i].weekday) << 24) + (((uint32_t)alarms[i].minutes) << 8) + alarms[i].action;
+            alarm_value = (((uint32_t)alarms[i].weekday) << 25) + (((uint32_t)alarms[i].minutes) << 14) + alarms[i].action;
             nvs_set_u32(handle, alarm_key, alarm_value);
         }
         else {
@@ -59,7 +59,7 @@ static void save_alarm_to_nvs(void)
 }
 
 
-void csro_alarm_add(uint8_t weekday, uint16_t minutes, uint8_t action)
+void csro_alarm_add(uint8_t weekday, uint16_t minutes, uint16_t action)
 {
     for(size_t i = 0; i < ALARM_NUMBER; i++)
     {
@@ -87,7 +87,7 @@ void csro_alarm_add(uint8_t weekday, uint16_t minutes, uint8_t action)
     }
 }
 
-void csro_alarm_modify(uint8_t index, uint8_t weekday, uint16_t minutes, uint8_t action)
+void csro_alarm_modify(uint8_t index, uint8_t weekday, uint16_t minutes, uint16_t action)
 {
     if (index > ALARM_NUMBER - 1) {
         return;
@@ -151,13 +151,13 @@ static void datetime_check_alarm(void)
 
 static void second_timer_callback( TimerHandle_t xTimer )
 {
-    debug("second_tick\n");
     datetime_info.time_run++;
     if (time_sync == true) {
         datetime_info.time_now++;
         localtime_r(&datetime_info.time_now, &datetime_info.time_info);
         if (datetime_info.time_info.tm_sec == 0) {
             datetime_check_alarm();
+            debug("check alarms\n");
         }
     }
 }

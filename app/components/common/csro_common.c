@@ -34,9 +34,6 @@ static void get_system_info(void)
     sprintf(mqtt_info.id, "csro/%s", system_info.mac_str);
     sprintf(mqtt_info.name, "csro/%s/%s", system_info.mac_str, system_info.dev_type);
 
-    sprintf(mqtt_info.sub_topic_self, "%s/%s/%s/command", mqtt_info.prefix, system_info.mac_str, system_info.dev_type);
-    sprintf(mqtt_info.sub_topic_group, "%s/group", mqtt_info.prefix);
-
     uint8_t sha1_decrypt[20];
     SHA1_CTX *pass_ctx=(SHA1_CTX *)malloc(sizeof(SHA1_CTX));
     SHA1_Init(pass_ctx);

@@ -1,52 +1,76 @@
 #include "csro_device.h"
-#include "cJSON.h"
-
 
 void csro_device_prepare_basic_message(void)
 {
-    static uint32_t basic_count = 0;
-    cJSON *root=cJSON_CreateObject();
-    cJSON *air_system;
-    cJSON_AddItemToObject(root, "air_system", air_system = cJSON_CreateObject());
-    cJSON_AddNumberToObject(air_system, "basic_count", basic_count++);
-    cJSON_AddNumberToObject(air_system, "power_count", system_info.power_on_count);
-    cJSON_AddNumberToObject(air_system, "free_heap", esp_get_free_heap_size());
-    cJSON_AddStringToObject(air_system, "ip", system_info.ip_str);
-    cJSON_AddNumberToObject(air_system, "run_sec", datetime_info.time_run);
-    char *out = cJSON_PrintUnformatted(root);
-	strcpy(mqtt_info.content, out);
-	free(out);
-	cJSON_Delete(root);
+    #ifdef NLIGHT
+        csro_nlight_prepare_basic_message();
+    #elif defined DLIGHT
+        csro_dlight_prepare_basic_message();
+    #elif defined MOTOR
+        csro_motor_prepare_basic_message();
+    #elif defined AQI_MONITOR
+        csro_air_monitor_prepare_basic_message();
+    #elif defined AIR_SYSTEM
+        csro_air_system_prepare_basic_message();
+    #endif
 }
 
 void csro_device_handle_self_message(MessageData* data)
 {
-    char topic[100];
-    strncpy(topic, (char *)data->topicName->lenstring.data, data->topicName->lenstring.len);
-    debug("topic: %s\n", topic);
-    debug("message content: %s\n", (char *)data->message->payload);
+    #ifdef NLIGHT
+        csro_nlight_handle_self_message(data);
+    #elif defined DLIGHT
+        csro_dlight_handle_self_message(data);
+    #elif defined MOTOR
+        csro_motor_handle_self_message(data);
+    #elif defined AQI_MONITOR
+        csro_air_monitor_handle_self_message(data);
+    #elif defined AIR_SYSTEM
+        csro_air_system_handle_self_message(data);
+    #endif
 }
 
 void csro_device_handle_group_message(MessageData* data)
 {
-    char topic[100];
-    strncpy(topic, (char *)data->topicName->lenstring.data, data->topicName->lenstring.len);
-    debug("topic: %s\n", topic);
-    debug("message content: %s\n", (char *)data->message->payload);
+    #ifdef NLIGHT
+        csro_nlight_handle_group_message(data);
+    #elif defined DLIGHT
+        csro_dlight_handle_group_message(data);
+    #elif defined MOTOR
+        csro_motor_handle_group_message(data);
+    #elif defined AQI_MONITOR
+        csro_air_monitor_handle_group_message(data);
+    #elif defined AIR_SYSTEM
+        csro_air_system_handle_group_message(data);
+    #endif
 }
 
+void csro_device_alarm_action(uint16_t action)
+{
+    #ifdef NLIGHT
+        csro_nlight_alarm_action(action);
+    #elif defined DLIGHT
+        csro_dlight_alarm_action(action);
+    #elif defined MOTOR
+        csro_motor_alarm_action(action);
+    #elif defined AQI_MONITOR
+        csro_air_monitor_alarm_action(action);
+    #elif defined AIR_SYSTEM
+        csro_air_system_alarm_action(action);
+    #endif
+}
 
 void csro_device_init(void)
 {
     #ifdef NLIGHT
-		
-	#elif defined DLIGHT
-		
-	#elif defined MOTOR
-		
-	#elif defined AQI_MONITOR
-		
-	#elif defined AIR_SYSTEM
-	    csro_air_system_init();
-	#endif
+        csro_nlight_init();
+    #elif defined DLIGHT
+        csro_dlight_init();
+    #elif defined MOTOR
+        csro_motor_init();
+    #elif defined AQI_MONITOR
+        csro_air_monitor_init();
+    #elif defined AIR_SYSTEM
+        csro_air_system_init();
+    #endif
 }
