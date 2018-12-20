@@ -1,8 +1,10 @@
 #include "csro_device.h"
 #include "modbus_master.h"
 
+
 static void modbus_master_task(void *pvParameters)
 {
+    modbus_master_init();
     uint8_t result[10];
     uint16_t holidng[10];
 	for(;;)
@@ -22,7 +24,7 @@ static void modbus_master_task(void *pvParameters)
         debug("\n");
         vTaskDelay(500 / portTICK_RATE_MS);
     }
-	vTaskDelete(NULL);
+    vTaskDelete(NULL);
 }
 
 
@@ -61,6 +63,5 @@ void csro_air_system_handle_group_message(MessageData* data)
 
 void csro_air_system_init(void)
 {
-    modbus_master_init();
     xTaskCreate(modbus_master_task, "modbus_master_task", 1024, NULL, 5, NULL);
 }
