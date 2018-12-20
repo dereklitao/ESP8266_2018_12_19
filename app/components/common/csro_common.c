@@ -79,7 +79,7 @@ void csro_system_init(void)
     nvs_flash_init();
     csro_datetime_init();
     get_system_info();
-    // csro_device_init();
+    csro_device_init();
 
     if (system_get_wifi_info()) {
         xTaskCreate(csro_task_mqtt, "csro_task_mqtt", 4096, NULL, 10, NULL);
@@ -121,4 +121,46 @@ bool csro_system_get_wifi_status(void)
         is_connect = false;
     }
     return is_connect;
+}
+
+bool csro_system_parse_json_number(char *msg, uint32_t *dest, char *object_name, char *sub_object_name)
+{
+    cJSON *json = cJSON_Parse(msg);
+    if (json == NULL) { goto EXIT; }
+
+    cJSON *object = cJSON_GetObjectItem(json, object_name);
+    if (object == NULL) { goto EXIT; }
+
+    cJSON *sub_object = cJSON_GetObjectItem(object, sub_object_name);
+    if (sub_object == NULL || (sub_object->type != cJSON_Number)) { goto EXIT; }
+
+    dest[0] = sub_object->valueint;
+
+    cJSON_Delete(json);
+    return true;
+
+EXIT:
+    cJSON_Delete(json);
+    return false;
+}
+
+bool csro_system_parse_json_string(char *msg, char* dest, char *object_name, char *sub_object_name)
+{
+    cJSON *json = cJSON_Parse(msg);
+    if (json == NULL) { goto EXIT; }
+
+    cJSON *object = cJSON_GetObjectItem(json, object_name);
+    if (object == NULL) { goto EXIT; }
+
+    cJSON *sub_object = cJSON_GetObjectItem(object, sub_object_name);
+    if (sub_object == NULL || (sub_object->type != cJSON_String)) { goto EXIT; }
+
+    strcpy(dest, sub_object->valuestring);
+
+    cJSON_Delete(json);
+    return true;
+
+EXIT:
+    cJSON_Delete(json);
+    return false;
 }

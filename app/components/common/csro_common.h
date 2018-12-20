@@ -122,6 +122,9 @@ extern mqtt_struct     mqtt_info;
 void csro_system_init(void);
 void csro_system_set_status(system_status status);
 bool csro_system_get_wifi_status(void);
+bool csro_system_parse_json_number(char *msg, uint32_t *dest, char *object_name, char *sub_object_name);
+bool csro_system_parse_json_string(char *msg, char *dest, char *object_name, char *sub_object_name);
+
 
 void csro_datetime_init(void);
 void csro_datetime_set(char *time_str);

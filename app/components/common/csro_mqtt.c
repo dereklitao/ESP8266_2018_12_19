@@ -147,6 +147,7 @@ static bool broker_is_connected(void)
 static void basic_msg_timer_callback( TimerHandle_t xTimer )
 {
     xSemaphoreGive(basic_msg_semaphore);
+    debug("basic_msg_timer_callback\n");
 }
 
 
@@ -178,10 +179,11 @@ static bool mqtt_pub_timer_message(void)
 void csro_task_mqtt(void *pvParameters)
 {
     xTaskCreate(udp_receive_task, "udp_receive_task", 2048, NULL, 5, NULL);
-    vSemaphoreCreateBinary(basic_msg_semaphore);
-    vSemaphoreCreateBinary(system_msg_semaphore);
+    basic_msg_semaphore = xSemaphoreCreateBinary();
+    system_msg_semaphore = xSemaphoreCreateBinary();
+    timer_msg_semaphore = xSemaphoreCreateBinary();
     vSemaphoreCreateBinary(timer_msg_semaphore);
-    basic_msg_timer = xTimerCreate("basic_msg_timer", 3000/portTICK_RATE_MS, pdTRUE, (void *)0, basic_msg_timer_callback);
+    basic_msg_timer = xTimerCreate("basic_msg_timer", 1000/portTICK_RATE_MS, pdTRUE, (void *)0, basic_msg_timer_callback);
     xTimerStart(basic_msg_timer, 0);
 
     while(true)
@@ -189,9 +191,9 @@ void csro_task_mqtt(void *pvParameters)
         if (csro_system_get_wifi_status()) {
             if (broker_is_connected()) {
                 csro_system_set_status(NORMAL_START_OK);
-            //     if (xSemaphoreTake(basic_msg_semaphore, 0) == pdTRUE) {
-            //        mqtt_pub_basic_message();
-            //    }
+                if (xSemaphoreTake(basic_msg_semaphore, 0) == pdTRUE) {
+                    debug("Pub basic.\n");
+               }
                   mqtt_pub_basic_message();
                 if (xSemaphoreTake(system_msg_semaphore, 0) == pdTRUE) {
                    mqtt_pub_system_message();
