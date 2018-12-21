@@ -30,6 +30,10 @@
 #define     MQTT_NAME_ID_LENGTH     50
 #define     ALARM_NUMBER            20
 
+#define     MIN_INTERVAL            2
+#define     MAX_INTERVAL            120
+
+
 
 // #define     NLIGHT                  3
 // #define     DLIGHT                  1
@@ -88,6 +92,7 @@ typedef struct
     char            broker[50];
     char            prefix[50];
 
+    uint16_t        interval;
     struct Network  network;
     MQTTClient      client;
     MQTTMessage     message;
@@ -114,14 +119,20 @@ typedef struct
 } alarm_struct;
 
 
-extern system_struct   system_info;
-extern datetime_struct datetime_info;
-extern mqtt_struct     mqtt_info;
+extern system_struct        system_info;
+extern datetime_struct      datetime_info;
+extern mqtt_struct          mqtt_info;
+
+extern SemaphoreHandle_t    basic_msg_semaphore;
+extern SemaphoreHandle_t    system_msg_semaphore;
+extern SemaphoreHandle_t    timer_msg_semaphore;
+extern TimerHandle_t        basic_msg_timer;
 
 
 void csro_system_init(void);
 void csro_system_set_status(system_status status);
 bool csro_system_get_wifi_status(void);
+void csro_system_prepare_message(void);
 bool csro_system_parse_json_number(char *msg, uint32_t *dest, char *object_name, char *sub_object_name);
 bool csro_system_parse_json_string(char *msg, char *dest, char *object_name, char *sub_object_name);
 

@@ -2,11 +2,12 @@
 #include "csro_device.h"
 #include "cJSON.h"
 
+SemaphoreHandle_t           basic_msg_semaphore;
+SemaphoreHandle_t           system_msg_semaphore;
+SemaphoreHandle_t           timer_msg_semaphore;
+TimerHandle_t               basic_msg_timer = NULL;
+
 static EventGroupHandle_t   wifi_event_group;
-static SemaphoreHandle_t    basic_msg_semaphore;
-static SemaphoreHandle_t    system_msg_semaphore;
-static SemaphoreHandle_t    timer_msg_semaphore;
-static TimerHandle_t        basic_msg_timer = NULL;
 static const EventBits_t    CONNECTED_BIT   = BIT0;
 int                         udp_sock;
 
@@ -107,15 +108,6 @@ static void udp_receive_task(void *pvParameters)
     vTaskDelete(NULL);
 }
 
-static void handle_self_message(MessageData* data)
-{
-    csro_device_handle_self_message(data);
-}
-
-static void handle_group_message(MessageData* data)
-{
-    csro_device_handle_group_message(data);
-}
 
 static bool broker_is_connected(void)
 {
@@ -136,42 +128,28 @@ static bool broker_is_connected(void)
     sprintf(mqtt_info.sub_topic_self, "%s/%s/%s/command", mqtt_info.prefix, system_info.mac_str, system_info.dev_type);
     sprintf(mqtt_info.sub_topic_group, "%s/group", mqtt_info.prefix);
 
-    if (MQTTConnect(&mqtt_info.client, &data) != SUCCESS)                                                   { mqtt_info.client.isconnected = 0; return false; }
+    if (MQTTConnect(&mqtt_info.client, &data) != SUCCESS)                                                               { mqtt_info.client.isconnected = 0; return false; }
     if (MQTTSubscribe(&mqtt_info.client, mqtt_info.sub_topic_self, QOS1, csro_device_handle_self_message) != SUCCESS)   { mqtt_info.client.isconnected = 0; return false; }
-    debug("%s\n", mqtt_info.sub_topic_self);
     if (MQTTSubscribe(&mqtt_info.client, mqtt_info.sub_topic_group, QOS1, csro_device_handle_group_message) != SUCCESS) { mqtt_info.client.isconnected = 0; return false; }
-    debug("%s\n", mqtt_info.sub_topic_group);
     return true;
 }
 
 static void basic_msg_timer_callback( TimerHandle_t xTimer )
 {
     xSemaphoreGive(basic_msg_semaphore);
-    debug("basic_msg_timer_callback\n");
 }
 
 
-static bool mqtt_pub_basic_message(void)
+static bool mqtt_pub_messgae(char *suffix, enum QoS qos)
 {
-    csro_device_prepare_basic_message();
-    sprintf(mqtt_info.pub_topic, "%s/%s/%s/basic", mqtt_info.prefix, system_info.mac_str, system_info.dev_type);
-	mqtt_info.message.payload = mqtt_info.content;
-	mqtt_info.message.payloadlen = strlen(mqtt_info.message.payload);
-	mqtt_info.message.qos = QOS1;
-	if (MQTTPublish(&mqtt_info.client, mqtt_info.pub_topic, &mqtt_info.message) != SUCCESS) {
+    sprintf(mqtt_info.pub_topic, "%s/%s/%s/%s", mqtt_info.prefix, system_info.mac_str, system_info.dev_type, suffix);
+    mqtt_info.message.payload = mqtt_info.content;
+    mqtt_info.message.payloadlen = strlen(mqtt_info.message.payload);
+    mqtt_info.message.qos = qos;
+    if (MQTTPublish(&mqtt_info.client, mqtt_info.pub_topic, &mqtt_info.message) != SUCCESS) {
         mqtt_info.client.isconnected = 0;
         return false;
     }
-	return true;
-}
-
-static bool mqtt_pub_system_message(void)
-{
-    return true;
-}
-
-static bool mqtt_pub_timer_message(void)
-{
     return true;
 }
 
@@ -179,11 +157,18 @@ static bool mqtt_pub_timer_message(void)
 void csro_task_mqtt(void *pvParameters)
 {
     xTaskCreate(udp_receive_task, "udp_receive_task", 2048, NULL, 5, NULL);
+
     basic_msg_semaphore = xSemaphoreCreateBinary();
+    xSemaphoreTake(basic_msg_semaphore, 1);
+
     system_msg_semaphore = xSemaphoreCreateBinary();
+    xSemaphoreTake(system_msg_semaphore, 1);
+
     timer_msg_semaphore = xSemaphoreCreateBinary();
+    xSemaphoreTake(timer_msg_semaphore, 1);
+
     vSemaphoreCreateBinary(timer_msg_semaphore);
-    basic_msg_timer = xTimerCreate("basic_msg_timer", 1000/portTICK_RATE_MS, pdTRUE, (void *)0, basic_msg_timer_callback);
+    basic_msg_timer = xTimerCreate("basic_msg_timer", (mqtt_info.interval * 1000)/portTICK_RATE_MS, pdTRUE, (void *)0, basic_msg_timer_callback);
     xTimerStart(basic_msg_timer, 0);
 
     while(true)
@@ -191,19 +176,21 @@ void csro_task_mqtt(void *pvParameters)
         if (csro_system_get_wifi_status()) {
             if (broker_is_connected()) {
                 csro_system_set_status(NORMAL_START_OK);
-                if (xSemaphoreTake(basic_msg_semaphore, 0) == pdTRUE) {
-                    debug("Pub basic.\n");
-               }
-                  mqtt_pub_basic_message();
-                if (xSemaphoreTake(system_msg_semaphore, 0) == pdTRUE) {
-                   mqtt_pub_system_message();
-               }
-                if (xSemaphoreTake(timer_msg_semaphore, 0) == pdTRUE) {
-                   mqtt_pub_timer_message();
-               }
-                if (MQTTYield(&mqtt_info.client, 1) != SUCCESS) {
-                   mqtt_info.client.isconnected = 0;
-               }
+                if (xSemaphoreTake(basic_msg_semaphore, 1) == pdTRUE) {
+                    csro_device_prepare_basic_message();
+                    mqtt_pub_messgae("basic", QOS1);
+                }
+                if (xSemaphoreTake(system_msg_semaphore, 1) == pdTRUE) {
+                    csro_system_prepare_message();
+                    mqtt_pub_messgae("system", QOS1);
+                }
+                if (xSemaphoreTake(timer_msg_semaphore, 1) == pdTRUE) {
+                    csro_device_prepare_timer_message();
+                    mqtt_pub_messgae("timer", QOS1);
+                }
+                if (MQTTYield(&mqtt_info.client, 50) != SUCCESS) {
+                    mqtt_info.client.isconnected = 0;
+                }
             }
             else {
                 csro_system_set_status(NORMAL_START_NOSERVER);

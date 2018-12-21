@@ -12,6 +12,11 @@ static void get_system_info(void)
     nvs_open("system_info", NVS_READWRITE, &handle);
     nvs_get_u32(handle, "power_count", &system_info.power_on_count);
     nvs_set_u32(handle, "power_count", (system_info.power_on_count + 1));
+    nvs_get_u16(handle, "interval", &mqtt_info.interval);
+    if ( mqtt_info.interval < MIN_INTERVAL || mqtt_info.interval > MAX_INTERVAL) {
+        nvs_set_u16(handle, "interval", 30);
+        mqtt_info.interval = 30;
+    }
     nvs_commit(handle);
     nvs_close(handle);
 
@@ -69,9 +74,10 @@ static bool system_get_wifi_info(void)
     return result;
 }
 
+void csro_system_prepare_message(void)
+{
 
-
-
+}
 
 
 void csro_system_init(void)
@@ -90,6 +96,7 @@ void csro_system_init(void)
 
 }
 
+
 void csro_system_set_status(system_status status)
 {
     if (system_info.status == RESET_PENDING) {
@@ -99,6 +106,7 @@ void csro_system_set_status(system_status status)
         system_info.status = status;
     }
 }
+
 
 bool csro_system_get_wifi_status(void)
 {

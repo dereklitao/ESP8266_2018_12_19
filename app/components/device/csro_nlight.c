@@ -3,6 +3,8 @@
 
 void csro_nlight_prepare_basic_message(void)
 {}
+void csro_nlight_prepare_timer_message(void)
+{}
 void csro_nlight_handle_self_message(MessageData* data)
 {}
 void csro_nlight_handle_group_message(MessageData* data)

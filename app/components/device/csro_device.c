@@ -15,6 +15,21 @@ void csro_device_prepare_basic_message(void)
     #endif
 }
 
+void csro_device_prepare_timer_message(void)
+{
+    #ifdef NLIGHT
+        csro_nlight_prepare_timer_message();
+    #elif defined DLIGHT
+        csro_dlight_prepare_timer_message();
+    #elif defined MOTOR
+        csro_motor_prepare_timer_message();
+    #elif defined AQI_MONITOR
+        csro_air_monitor_prepare_timer_message();
+    #elif defined AIR_SYSTEM
+        csro_air_system_prepare_timer_message();
+    #endif
+}
+
 void csro_device_handle_self_message(MessageData* data)
 {
     #ifdef NLIGHT
