@@ -35,11 +35,11 @@
 
 
 
-// #define     NLIGHT                  3
+ #define     NLIGHT                  3
 // #define     DLIGHT                  1
 // #define     MOTOR                   2
 // #define     AIR_MONITOR
-#define     AIR_SYSTEM
+// #define     AIR_SYSTEM
 
 
 typedef enum 

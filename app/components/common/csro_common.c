@@ -21,13 +21,13 @@ static void get_system_info(void)
     nvs_close(handle);
 
     #ifdef NLIGHT
-		sprintf(system_info.device_type, "nlight%d", NLIGHT);
+		sprintf(system_info.dev_type, "nlight%d", NLIGHT);
 	#elif defined DLIGHT
-		sprintf(system_info.device_type, "dlight%d", DLIGHT);
+		sprintf(system_info.dev_type, "dlight%d", DLIGHT);
 	#elif defined MOTOR
-		sprintf(system_info.device_type, "motor%d", MOTOR);
+		sprintf(system_info.dev_type, "motor%d", MOTOR);
 	#elif defined AQI_MONITOR
-		sprintf(system_info.device_type, "air_monitor");
+		sprintf(system_info.dev_type, "air_monitor");
 	#elif defined AIR_SYSTEM
 		sprintf(system_info.dev_type, "air_system");
 	#endif

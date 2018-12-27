@@ -5,6 +5,25 @@
 #include "cJSON.h"
 
 
+typedef struct
+{
+    uint8_t index;
+    uint8_t pin_num;
+    uint8_t status;
+    uint8_t on_src;
+    timer_t on_tim;
+    uint8_t off_src;
+    time_t off_tim;
+} csro_switch;
+
+typedef struct
+{
+    uint8_t status;
+    uint8_t holdtime;
+} csro_button;
+
+
+
 void csro_device_prepare_basic_message(void);
 void csro_device_prepare_timer_message(void);
 void csro_device_handle_self_message(MessageData* data);
